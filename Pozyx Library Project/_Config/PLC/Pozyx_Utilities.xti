@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<TcSmItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4024.7" ClassName="CNestedPlcProjDef">
+	<Project GUID="{C9BCFC14-66A0-4988-8633-EBF6AD305A25}" Name="Pozyx_Utilities" PrjFilePath="..\..\Pozyx_Utilities\Pozyx_Utilities.plcproj" TmcFilePath="..\..\Pozyx_Utilities\Pozyx_Utilities.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e"/>
+</TcSmItem>
