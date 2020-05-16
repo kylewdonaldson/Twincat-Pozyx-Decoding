@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="ST_Metrics" Id="{685bee23-74b9-467c-bfa0-6523d119923a}">
+    <Declaration><![CDATA[TYPE ST_Metrics :
+STRUCT
+	fLatency	: LREAL;		// Time spent for whole positioning update in ms.
+	stRates		: ST_Rates;		 
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="ST_SensorValue" Id="{e05e5838-c495-402b-bbda-15b2a0a40963}">
+    <Declaration><![CDATA[TYPE ST_SensorValue :
+STRUCT
+	sType		: STRING;	// Type of custom sensor data 
+	faBuffer	: ARRAY[0..GVL_PozyxParameters.cnCustomSensorBufferSize] OF LREAL; // Custom sensor data array
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

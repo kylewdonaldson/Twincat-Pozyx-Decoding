@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="ST_AnchorData" Id="{ab6b364e-670d-40ff-ae83-15fc8612450d}">
+    <Declaration><![CDATA[TYPE ST_AnchorData :
+STRUCT
+	sTagID		: STRING;	// Tag ID 
+	sAnchorID	: STRING;	// Anchor ID
+	fRSS		: LREAL;	// Root signal strength of the anchor's data packet.	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

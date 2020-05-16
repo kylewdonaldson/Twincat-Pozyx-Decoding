@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="ST_Rates" Id="{bd7cd1fb-a746-4699-b108-2fca0d3723cf}">
+    <Declaration><![CDATA[TYPE ST_Rates :
+STRUCT
+	fSuccess	: LREAL;	// The successful positioning update rate in Hz.
+	fUpdate 	: LREAL;	// The total amount of tag updates in Hz.
+	fPacketLoss	: LREAL;	// The times positioning failed due to packet loss in Hz.
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

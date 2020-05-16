@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <GVL Name="GVL_PozyxParameters" Id="{cefa534d-f27c-4882-b742-4124b765294b}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL CONSTANT 
+
+	sPozyxPacketVersion			: STRING := '2.0';	// Applicable Pozyx JSON packet version
+
+	cnMaxCustomSensors			: UINT	:= 1;		// Max number of custom sensors
+	cnCustomSensorBufferSize	: UINT	:= 1;		// Max size of custom sensor buffer
+	
+	cnMaxAnchors				: UINT	:= 6;		// Max Number of Anchors
+	cnMaxTags					: UINT	:= 5;		// Max Number of Tags
+	cnMaxZones					: UINT	:= 5;		// Max number of Zones
+	
+	cnMaxPozyxPacketLength 		: UINT	:= 1000;	// Max JSON packet size
+
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

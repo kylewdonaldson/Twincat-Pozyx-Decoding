@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="Pozyx_Data" Id="{b6c633e1-93bc-4d2c-873a-beb323feec9c}">
+    <Declaration><![CDATA[TYPE Pozyx_Data :
+STRUCT
+	
+	sVersion	: STRING;	// Pozyx JSON packet version
+	sTagID		: STRING;	// tagId for packet
+	fTimeStamp 	: LREAL;	// time expressed in seconds since the epoch
+	stData		: ST_Data;	// Data super structure
+	bSuccess	: BOOL;		// Indicates if positioning was successful 
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

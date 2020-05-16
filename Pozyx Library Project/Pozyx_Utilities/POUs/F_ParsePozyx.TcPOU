@@ -1,0 +1,493 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="F_ParsePozyx" Id="{e9ebdcfd-5005-4fce-be2e-91d6b0218e10}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION F_ParsePozyx	: BOOL
+VAR_INPUT
+	pPayload	: PVOID;	// pointer to JSON payload 
+	udiSize		: UDINT;	// size of JSON packet 
+	pResult		: PVOID;	// pointer to result structure 
+END_VAR
+
+VAR
+	// Source JSON STRING
+	sInput 			: STRING(GVL_PozyxParameters.cnMaxPozyxPacketLength);	
+	
+	// Return Data Structure
+	stReturn		: Pozyx_Data;
+
+	// JSON Document Object Model Parser
+	fbJsonParser	: FB_JsonDomParser;
+	
+	// Parsing Intermediates
+	jsonDoc 		: SJsonValue;
+	jsonElement		: SJsonValue;
+	
+	jsonProp		: SJsonValue;
+	jsonProp1		: SJsonValue;
+	jsonProp2		: SJsonValue;
+	jsonProp3		: SJsonValue;
+	jsonProp4		: SJsonValue;
+	jsonProp5		: SJsonValue;
+	jsonProp6		: SJsonValue;
+
+	bHasMember		: BOOL;
+	
+	// Top level iteration 
+	jsonIterator			: SJsonAIterator;
+	jsonIteratorEnd			: SJsonAIterator;
+	iIterator				: INT	:= 0;
+	
+	// Level 2 iteration
+	jsonIterator1			: SJsonAIterator;
+	jsonIteratorEnd1		: SJsonAIterator;
+	iIterator1				: INT	:= 0;
+
+	// Level 3 iteration
+	jsonIterator2			: SJsonAIterator;
+	jsonIteratorEnd2		: SJsonAIterator;
+	iIterator2				: INT	:= 0;
+	
+	// Pozyx Packet version correct
+	bVersionCorrect			: BOOL;
+
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* 	Function parses a JSON packet from a POZYX MQTT client and publishes data to the structure at the pResult pointer 
+	Function returns TRUE if a valid JSON packet was received and FALSE if the JSON packet was valid
+	Currently working with POZYX Version 2.0 JSON format.
+*)
+
+// Copy input string
+Tc2_System.MEMCPY(destAddr:=ADR(sInput),srcAddr:=pPayload,n:=udiSize);
+
+// Read the document object model 
+jsonDoc		:= fbJsonParser.ParseDocument(sJson:=sInput);
+//Check if jsonDoc is valid 
+IF(jsonDoc <> Tc3_Module.NULL)THEN	
+	// Check if jsonDoc is an array
+	IF(fbJsonParser.IsArray(v:=jsonDoc))THEN
+		//use the JSonIterator to iterate throught the array 
+		jsonIterator 	:= fbJsonParser.ArrayBegin(v:=jsonDoc);
+		jsonIteratorEnd := fbJsonParser.ArrayEnd(v:=jsonDoc);
+		iIterator1		:= 0;
+		WHILE ((jsonIterator <> jsonIteratorEnd) AND (iIterator <= GVL_PozyxParameters.cnMaxTags)) DO
+ 			jsonElement 		:= fbJsonParser.GetArrayValue(jsonIterator);
+			// version
+			bHasMember := fbJsonParser.HasMember(jsonElement,'version');
+			IF (bHasMember) THEN
+				  bHasMember := FALSE;
+				  jsonProp := fbJsonParser.FindMember(jsonElement, 'version');
+				  stReturn.sVersion := fbJsonParser.GetString(jsonProp);
+			END_IF
+			// Check that we are dealing with the correct Pozyx packet version 
+			IF(Tc2_System.MEMCMP(ADR(GVL_PozyxParameters.sPozyxPacketVersion),ADR(stReturn.sVersion),SIZEOF(stReturn.sVersion)) = 0) THEN
+				bVersionCorrect	:= TRUE;	
+			END_IF
+				// tagId
+				bHasMember := fbJsonParser.HasMember(jsonElement,'tagId');
+				IF (bHasMember) THEN
+					  bHasMember := FALSE;
+					  jsonProp := fbJsonParser.FindMember(jsonElement, 'tagId');
+					  stReturn.sTagID := fbJsonParser.GetString(jsonProp);
+				END_IF
+				// success
+				bHasMember := fbJsonParser.HasMember(jsonElement,'success');
+				IF (bHasMember) THEN
+					  bHasMember := FALSE;
+					  jsonProp := fbJsonParser.FindMember(jsonElement, 'success');
+					  stReturn.bSuccess := fbJsonParser.GetBool(jsonProp);
+				END_IF
+				// time-stamp
+				bHasMember := fbJsonParser.HasMember(jsonElement,'timestamp');
+				IF (bHasMember) THEN
+					  bHasMember := FALSE;
+					  jsonProp := fbJsonParser.FindMember(jsonElement, 'timestamp');
+					  stReturn.fTimeStamp := fbJsonParser.GetDouble(jsonProp);
+				END_IF
+	
+				// data 
+				bHasMember := fbJsonParser.HasMember(jsonElement,'data');
+				IF (bHasMember) THEN
+						bHasMember := FALSE;
+						jsonProp := fbJsonParser.FindMember(jsonElement, 'data');
+		
+						
+						// data / metrics 
+						bHasMember := fbJsonParser.HasMember(jsonProp,'metrics');
+						IF (bHasMember) THEN
+							bHasMember := FALSE;
+							jsonProp1 := fbJsonParser.FindMember(jsonProp, 'metrics');
+							
+							// data / metics / latency 
+							bHasMember := fbJsonParser.HasMember(jsonProp1,'latency');
+							IF (bHasMember) THEN 
+								bHasMember := FALSE;
+								jsonProp2 := fbJsonParser.FindMember(jsonProp1, 'latency');
+								stReturn.stData.stMetrics.fLatency := fbJsonParser.GetDouble(jsonProp2);
+							END_IF // data / metrics / latency
+		
+							// data / metrics / rates  
+							bHasMember := fbJsonParser.HasMember(jsonProp1,'rates');
+							IF (bHasMember) THEN 
+								bHasMember := FALSE;
+								jsonProp2 := fbJsonParser.FindMember(jsonProp1, 'rates');
+								// data / metrics / rates / success
+								bHasMember := fbJsonParser.HasMember(jsonProp2,'success');
+								IF (bHasMember) THEN 
+									bHasMember := FALSE;
+									jsonProp3 := fbJsonParser.FindMember(JsonProp2, 'success');
+									stReturn.stData.stMetrics.stRates.fSuccess := fbJsonParser.GetDouble(jsonProp3);
+								END_IF // data / metrics / rates / success
+								// data / metrics / rates / update
+								bHasMember := fbJsonParser.HasMember(jsonProp2,'update');
+								IF (bHasMember) THEN 
+									bHasMember := FALSE;
+									jsonProp3 := fbJsonParser.FindMember(JsonProp2, 'update');
+									stReturn.stData.stMetrics.stRates.fUpdate := fbJsonParser.GetDouble(jsonProp3);
+								END_IF // data / metrics / rates / update
+								// data / metrics / rates / packetLoss 
+								bHasMember := fbJsonParser.HasMember(jsonProp2,'packetLoss');
+								IF (bHasMember) THEN 
+									bHasMember := FALSE;
+									jsonProp3 := fbJsonParser.FindMember(JsonProp2, 'packetLoss');
+									stReturn.stData.stMetrics.stRates.fPacketLoss := fbJsonParser.GetDouble(jsonProp3);
+								END_IF // data / metrics / rates / packetLoss
+							END_IF // data / metrics / rates 
+		
+						END_IF // data / metrics 
+						
+						
+						// tagData super structure
+						bHasMember := fbJsonParser.HasMember(jsonProp,'tagData');
+						IF (bHasMember) THEN
+							  bHasMember := FALSE;
+							  jsonProp1 := fbJsonParser.FindMember(jsonProp, 'tagData');
+								// data / tagData / blinkIndex
+								bHasMember := fbJsonParser.HasMember(jsonProp1,'blinkIndex');
+								IF (bHasMember) THEN
+									bHasMember := FALSE;
+									jsonProp2 := fbJsonParser.FindMember(jsonProp1, 'blinkIndex');
+									stReturn.stData.stTagData.fBlinkIndex := fbJsonParser.GetDouble(jsonProp2);
+								END_IF // data / tagData / blinkIndex
+								// data / tagData / custom sensors
+								bHasMember := fbJsonParser.HasMember(jsonProp1,'customSensors');
+								IF (bHasMember) THEN
+									bHasMember := FALSE;
+									jsonProp2 := fbJsonParser.FindMember(jsonProp1, 'customSensors');
+									IF(fbJsonParser.IsArray(v:=jsonProp2))THEN
+										//use the JSonIterator1 to iterate throught the custom sensors array 
+										jsonIterator1 		:= fbJsonParser.ArrayBegin(v:=jsonProp2);
+										jsonIteratorEnd1	:= fbJsonParser.ArrayEnd(v:=jsonProp2);
+										iIterator1			:= 0;
+										WHILE((jsonIterator1 <> jsonIteratorEnd1) AND (iIterator1 <= GVL_PozyxParameters.cnMaxCustomSensors)) DO
+											jsonProp3		:= fbJsonParser.GetArrayValue(jsonIterator1);
+												// this has name + value fields 
+												// data / tagData / customSensors[] / name
+												bHasMember := fbJsonParser.HasMember(jsonProp3,'name');
+												IF (bHasMember) THEN
+													bHasMember := FALSE;
+													jsonProp4 := fbJsonParser.FindMember(jsonProp3, 'name');
+													stReturn.stData.stTagData.staCustomSensors[iIterator1].sName := fbJsonParser.GetString(jsonProp4);
+												END_IF // data / tagData / customSensors[] / name
+		
+												// data / tagData / customSensors[] / value
+												bHasMember := fbJsonParser.HasMember(jsonProp3,'value');
+												IF (bHasMember) THEN
+													bHasMember := FALSE;
+													jsonProp4 := fbJsonParser.FindMember(jsonProp3, 'value');
+													// data / tagData / customSensors[] / value / type
+													bHasMember := fbJsonParser.HasMember(jsonProp4,'type');
+													IF (bHasMember) THEN
+														bHasMember := FALSE;
+														jsonProp5 := fbJsonParser.FindMember(jsonProp4, 'type');
+														stReturn.stData.stTagData.staCustomSensors[iIterator1].stValue.sType	:= fbJsonParser.GetString(v:=jsonProp5);
+													END_IF // data / tagData / customSensors[] / value / type
+		
+													// data / tagData / customSensors[] / value / data
+													bHasMember := fbJsonParser.HasMember(jsonProp4,'data');
+													IF (bHasMember) THEN
+														bHasMember := FALSE;
+														jsonProp5 := fbJsonParser.FindMember(jsonProp4, 'data');
+															IF(fbJsonParser.IsArray(v:=jsonProp5)) THEN
+																//use the JSonIterator2 to iterate throught the custom sensors array 
+																jsonIterator2 		:= fbJsonParser.ArrayBegin(v:=jsonProp5);
+																jsonIteratorEnd2	:= fbJsonParser.ArrayEnd(v:=jsonProp5);
+																WHILE((jsonIterator2 <> jsonIteratorEnd2) AND (iIterator2 <= GVL_PozyxParameters.cnCustomSensorBufferSize)) DO
+																	jsonProp6		:= fbJsonParser.GetArrayValue(jsonIterator2);
+																	
+																	stReturn.stData.stTagData.staCustomSensors[iIterator1].stValue.faBuffer[iIterator2] := fbJsonParser.GetDouble(jsonProp6);
+																	
+																	jsonIterator2	:= fbJsonParser.NextArray(jsonIterator2);
+																	iIterator2		:= iIterator2 + 1;
+																END_WHILE
+															END_IF
+													END_IF // data / tagData / customSensors / value / data
+												END_IF // data / tagData / customSensors / value
+											jsonIterator1	:= fbJsonParser.NextArray(jsonIterator1);
+											iIterator1		:= iIterator1 + 1;
+										END_WHILE
+									END_IF
+								END_IF // data / tagData / customSensors
+						END_IF // tagData super structure
+						
+					// data  / anchorData[]
+					bHasMember := fbJsonParser.HasMember(jsonProp,'anchorData');
+					IF (bHasMember) THEN
+						bHasMember := FALSE;
+						jsonProp1 := fbJsonParser.FindMember(jsonProp, 'anchorData');
+						IF(fbJsonParser.IsArray(v:=jsonProp1))THEN
+						//use the JSonIterator1 to iterate throught the anchorData array 
+						jsonIterator1 		:= fbJsonParser.ArrayBegin(v:=jsonProp1);
+						jsonIteratorEnd1	:= fbJsonParser.ArrayEnd(v:=jsonProp1);
+						iIterator1			:= 0;
+							// iterate through the anchorData array
+							WHILE((jsonIterator1 <> jsonIteratorEnd1) AND (iIterator1 <= GVL_PozyxParameters.cnMaxAnchors)) DO
+								jsonProp2		:= fbJsonParser.GetArrayValue(jsonIterator1);
+								// data / anchorData [] / tagId
+								bHasMember := fbJsonParser.HasMember(jsonProp2,'tagId');
+								IF (bHasMember) THEN
+									bHasMember := FALSE;
+									jsonProp3 := fbJsonParser.FindMember(jsonProp2, 'tagId');
+									stReturn.stData.staAnchorData[iIterator1].sTagID := fbJsonParser.GetString(jsonProp3);
+								END_IF
+								
+								// data / anchorData [] / anchorId
+								bHasMember := fbJsonParser.HasMember(jsonProp2,'anchorId');
+								IF (bHasMember) THEN
+									bHasMember := FALSE;
+									jsonProp3 := fbJsonParser.FindMember(jsonProp2, 'anchorId');
+									stReturn.stData.staAnchorData[iIterator1].sAnchorID := fbJsonParser.GetString(jsonProp3);
+								END_IF
+								
+								// data / anchorData [] / rss
+								bHasMember := fbJsonParser.HasMember(jsonProp2,'rss');
+								IF (bHasMember) THEN
+									bHasMember := FALSE;
+									jsonProp3 := fbJsonParser.FindMember(jsonProp2, 'rss');
+									stReturn.stData.staAnchorData[iIterator1].fRSS := fbJsonParser.GetDouble(jsonProp3);
+								END_IF
+								
+								jsonIterator1	:= fbJsonParser.NextArray(jsonIterator1);
+								iIterator1		:= iIterator1 + 1;
+							END_WHILE
+						END_IF
+					END_IF // data / anchorData / array
+		
+					// data /  coordinates
+					bHasMember := fbJsonParser.HasMember(jsonProp,'coordinates');
+					IF (bHasMember) THEN
+						  bHasMember := FALSE;
+						  jsonProp1 := fbJsonParser.FindMember(jsonProp, 'coordinates');
+							// data /  coordinates / x
+							bHasMember := fbJsonParser.HasMember(jsonProp1,'x');
+							IF (bHasMember) THEN
+								bHasMember := FALSE;
+								jsonProp2 := fbJsonParser.FindMember(jsonProp1, 'x');
+								stReturn.stData.stCoordinates.fX	:= fbJsonParser.GetDouble(jsonProp2);		
+							END_IF // data / coordinates / x
+		
+							// data /  coordinates / y
+							bHasMember := fbJsonParser.HasMember(jsonProp1,'y');
+							IF (bHasMember) THEN
+								bHasMember := FALSE;
+								jsonProp2 := fbJsonParser.FindMember(jsonProp1, 'y');
+								stReturn.stData.stCoordinates.fY	:= fbJsonParser.GetDouble(jsonProp2);		
+							END_IF // data / coordinates / y
+		
+							// data /  coordinates / z
+							bHasMember := fbJsonParser.HasMember(jsonProp1,'z');
+							IF (bHasMember) THEN
+								bHasMember := FALSE;
+								jsonProp2 := fbJsonParser.FindMember(jsonProp1, 'z');
+								stReturn.stData.stCoordinates.fZ	:= fbJsonParser.GetDouble(jsonProp2);		
+							END_IF // data / coordinates / z  
+					END_IF // data / coordinates 
+			
+					// data / type
+					bHasMember := fbJsonParser.HasMember(jsonProp,'type');
+					IF (bHasMember) THEN
+						  bHasMember := FALSE;
+						  jsonProp1 := fbJsonParser.FindMember(jsonProp, 'type');
+						  stReturn.stData.diType := fbJsonParser.GetInt(jsonProp1);
+					END_IF // data / type 
+		
+					// data / zones
+					bHasMember := fbJsonParser.HasMember(jsonProp,'zones');
+					IF (bHasMember) THEN
+						  bHasMember := FALSE;
+						  jsonProp1 := fbJsonParser.FindMember(jsonProp, 'zones');
+							IF(fbJsonParser.IsArray(jsonProp1))THEN
+								//use the JSonIterator1 to iterate throught the zones array 
+								jsonIterator1 		:= fbJsonParser.ArrayBegin(v:=jsonProp1);
+								jsonIteratorEnd1	:= fbJsonParser.ArrayEnd(v:=jsonProp1);
+								iIterator1			:= 0;
+								WHILE((jsonIterator1 <> jsonIteratorEnd1) AND (iIterator1 <= GVL_PozyxParameters.cnMaxZones)) DO
+									jsonProp2		:= fbJsonParser.GetArrayValue(jsonIterator1);
+									
+									stReturn.stData.adiZones[iIterator1]	:= fbJsonParser.GetInt(jsonProp2);
+									
+									jsonIterator1	:= fbJsonParser.NextArray(jsonIterator1);
+									iIterator1		:= iIterator1 + 1;
+								END_WHILE
+							END_IF
+					END_IF // data / zones
+					
+				END_IF // data
+				jsonIterator 		:= fbJsonParser.NextArray(jsonIterator);
+				iIterator			:= iIterator + 1;
+			END_WHILE
+	END_IF // Check is Array 
+	F_ParsePozyx	:= TRUE;	// Function returns true if input was a valid JSON packet
+ELSE  // jsonDoc validity check 
+	F_ParsePozyx	:= FALSE;	// Function returns false if input was not a valid JSON packet
+END_IF// jsonDoc validity check 
+
+// Purge the input string for the next call 
+Tc2_System.MEMSET(ADR(sInput),0,n:=udiSize);	
+
+// Copy result to output
+IF(pResult <> Tc3_Module.NULL) THEN
+	Tc2_System.MEMCPY(destAddr:=pResult,srcAddr:=ADR(stReturn),SIZEOF(stReturn));
+END_IF
+]]></ST>
+    </Implementation>
+    <LineIds Name="F_ParsePozyx">
+      <LineId Id="677" Count="0" />
+      <LineId Id="764" Count="0" />
+      <LineId Id="686" Count="0" />
+      <LineId Id="685" Count="0" />
+      <LineId Id="699" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="100" Count="0" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="229" Count="0" />
+      <LineId Id="222" Count="1" />
+      <LineId Id="549" Count="0" />
+      <LineId Id="224" Count="0" />
+      <LineId Id="231" Count="0" />
+      <LineId Id="252" Count="6" />
+      <LineId Id="690" Count="0" />
+      <LineId Id="689" Count="0" />
+      <LineId Id="694" Count="1" />
+      <LineId Id="259" Count="6" />
+      <LineId Id="274" Count="13" />
+      <LineId Id="296" Count="0" />
+      <LineId Id="289" Count="3" />
+      <LineId Id="311" Count="0" />
+      <LineId Id="670" Count="0" />
+      <LineId Id="312" Count="0" />
+      <LineId Id="303" Count="0" />
+      <LineId Id="297" Count="2" />
+      <LineId Id="319" Count="0" />
+      <LineId Id="322" Count="0" />
+      <LineId Id="310" Count="0" />
+      <LineId Id="304" Count="2" />
+      <LineId Id="321" Count="0" />
+      <LineId Id="308" Count="1" />
+      <LineId Id="323" Count="0" />
+      <LineId Id="325" Count="4" />
+      <LineId Id="339" Count="6" />
+      <LineId Id="360" Count="13" />
+      <LineId Id="331" Count="0" />
+      <LineId Id="324" Count="0" />
+      <LineId Id="302" Count="0" />
+      <LineId Id="374" Count="0" />
+      <LineId Id="665" Count="0" />
+      <LineId Id="375" Count="0" />
+      <LineId Id="381" Count="3" />
+      <LineId Id="387" Count="0" />
+      <LineId Id="390" Count="4" />
+      <LineId Id="397" Count="5" />
+      <LineId Id="412" Count="0" />
+      <LineId Id="427" Count="2" />
+      <LineId Id="547" Count="0" />
+      <LineId Id="413" Count="0" />
+      <LineId Id="430" Count="0" />
+      <LineId Id="434" Count="0" />
+      <LineId Id="456" Count="6" />
+      <LineId Id="470" Count="0" />
+      <LineId Id="463" Count="4" />
+      <LineId Id="479" Count="6" />
+      <LineId Id="493" Count="0" />
+      <LineId Id="486" Count="4" />
+      <LineId Id="508" Count="0" />
+      <LineId Id="496" Count="3" />
+      <LineId Id="518" Count="0" />
+      <LineId Id="676" Count="0" />
+      <LineId Id="521" Count="0" />
+      <LineId Id="675" Count="0" />
+      <LineId Id="504" Count="1" />
+      <LineId Id="502" Count="0" />
+      <LineId Id="509" Count="0" />
+      <LineId Id="492" Count="0" />
+      <LineId Id="469" Count="0" />
+      <LineId Id="433" Count="0" />
+      <LineId Id="454" Count="0" />
+      <LineId Id="431" Count="0" />
+      <LineId Id="414" Count="0" />
+      <LineId Id="404" Count="0" />
+      <LineId Id="386" Count="0" />
+      <LineId Id="669" Count="0" />
+      <LineId Id="522" Count="0" />
+      <LineId Id="526" Count="3" />
+      <LineId Id="535" Count="3" />
+      <LineId Id="546" Count="0" />
+      <LineId Id="660" Count="0" />
+      <LineId Id="539" Count="1" />
+      <LineId Id="558" Count="6" />
+      <LineId Id="579" Count="0" />
+      <LineId Id="565" Count="6" />
+      <LineId Id="580" Count="0" />
+      <LineId Id="572" Count="6" />
+      <LineId Id="544" Count="0" />
+      <LineId Id="541" Count="2" />
+      <LineId Id="531" Count="0" />
+      <LineId Id="295" Count="0" />
+      <LineId Id="593" Count="0" />
+      <LineId Id="586" Count="4" />
+      <LineId Id="602" Count="6" />
+      <LineId Id="624" Count="0" />
+      <LineId Id="609" Count="6" />
+      <LineId Id="623" Count="0" />
+      <LineId Id="616" Count="6" />
+      <LineId Id="592" Count="0" />
+      <LineId Id="626" Count="0" />
+      <LineId Id="634" Count="6" />
+      <LineId Id="648" Count="0" />
+      <LineId Id="641" Count="4" />
+      <LineId Id="671" Count="0" />
+      <LineId Id="651" Count="5" />
+      <LineId Id="674" Count="0" />
+      <LineId Id="649" Count="0" />
+      <LineId Id="673" Count="0" />
+      <LineId Id="657" Count="2" />
+      <LineId Id="672" Count="0" />
+      <LineId Id="647" Count="0" />
+      <LineId Id="582" Count="1" />
+      <LineId Id="227" Count="0" />
+      <LineId Id="453" Count="0" />
+      <LineId Id="228" Count="0" />
+      <LineId Id="664" Count="0" />
+      <LineId Id="711" Count="0" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="712" Count="0" />
+      <LineId Id="710" Count="0" />
+      <LineId Id="681" Count="0" />
+      <LineId Id="121" Count="1" />
+      <LineId Id="704" Count="0" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="705" Count="0" />
+      <LineId Id="684" Count="0" />
+      <LineId Id="706" Count="0" />
+      <LineId Id="698" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

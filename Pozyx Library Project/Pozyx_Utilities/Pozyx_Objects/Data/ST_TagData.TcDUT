@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="ST_TagData" Id="{0f847e2a-5546-414b-a261-5e3dab58beca}">
+    <Declaration><![CDATA[TYPE ST_TagData :
+STRUCT
+	fBlinkIndex			: LREAL;	// An ever increasing number (32-bit integer) that gets incremented every time the tag blinks.
+	staCustomSensors	: ARRAY[0..GVL_PozyxParameters.cnMaxCustomSensors] OF ST_CustomSensor;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

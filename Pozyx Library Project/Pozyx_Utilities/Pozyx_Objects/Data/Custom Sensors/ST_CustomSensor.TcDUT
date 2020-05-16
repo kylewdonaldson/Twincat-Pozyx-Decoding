@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="ST_CustomSensor" Id="{e4c1aa9e-039b-4f58-be41-d89da36445d2}">
+    <Declaration><![CDATA[TYPE ST_CustomSensor :
+STRUCT
+	sName	: STRING;			// ID of custom sensor
+	stValue	: ST_SensorValue;	// Custom sensor value object
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="ST_Data" Id="{0f2d3b36-e093-4d48-8aae-d554156a17d4}">
+    <Declaration><![CDATA[TYPE ST_Data :
+STRUCT
+	stMetrics	 	: ST_Metrics;	// metrics data object
+	stTagData		: ST_TagData;	// tagData object
+	staAnchorData	: ARRAY[0..GVL_PozyxParameters.cnMaxAnchors] OF St_AnchorData; // array of anchorData objects 
+	stCoordinates	: ST_Coordinates; // coordinates data object	 	
+	diType			: DINT;	// type of pozyz tag
+	adiZones		: ARRAY[0..GVL_PozyxParameters.cnMaxZones] OF DINT; // array of zones the tags is within
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>
