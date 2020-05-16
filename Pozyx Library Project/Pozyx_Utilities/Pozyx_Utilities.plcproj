@@ -15,6 +15,12 @@
     <Implicit_KindOfTask>{72b02f02-8c53-43bd-91c2-f8aad9505771}</Implicit_KindOfTask>
     <Implicit_Jitter_Distribution>{f015aef5-2e7a-4bfa-adf6-8461949d833b}</Implicit_Jitter_Distribution>
     <LibraryReferences>{12c6b2a6-7a3d-4027-b5b9-e4d276853acf}</LibraryReferences>
+    <Company>eNtsa</Company>
+    <Released>false</Released>
+    <Title>Pozyx_Utilities</Title>
+    <ProjectVersion>2.0</ProjectVersion>
+    <Author>Kyle Donaldson</Author>
+    <Description>Utilitity library for processing Version: 2.0 Pozyx JSON packets. </Description>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="GVLs" />
@@ -23,6 +29,7 @@
     <Folder Include="Pozyx_Objects\Data" />
     <Folder Include="Pozyx_Objects\Data\Custom Sensors" />
     <Folder Include="Pozyx_Objects\Metrics" />
+    <Folder Include="Version" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GVLs\GVL_PozyxParameters.TcGVL">
@@ -57,6 +64,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Pozyx_Objects\Pozyx_Data.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Version\Global_Version.TcGVL">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
